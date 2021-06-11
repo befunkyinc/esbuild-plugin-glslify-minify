@@ -1,5 +1,6 @@
 /**
  * Based on https://github.com/glslify/rollup-plugin-glslify
+ * and https://github.com/leosingleton/webpack-glsl-minify
  */
 'use strict';
 
@@ -9,10 +10,12 @@ import * as _glslify from 'glslify';
 import GlslMinify from './lib/minify.js';
 
 let GlslMinifyInstance;
+
 async function compressShader(code) {
   // Code adapted from https://github.com/leosingleton/webpack-glsl-minify
   GlslMinifyInstance = GlslMinifyInstance || new GlslMinify();
-  return await GlslMinifyInstance.executeFile({ contents: code }).sourceCode;
+  const result = await GlslMinifyInstance.executeFile({ contents: code });
+  return result.sourceCode;
 }
 
 const kDefaultConfig = {
@@ -36,8 +39,6 @@ function glslify(options) {
   const config = Object.assign({}, kDefaultConfig, options);
   const filter = createFilter(config.extensions);
 
-  let requireIndex = 0;
-
   return {
     name: 'glslify',
     setup(build) {
@@ -45,40 +46,23 @@ function glslify(options) {
       build.onLoad({ filter }, async (args) => {
         const contents = await fsPromises.readFile(args.path, 'utf8');
 
-        const fileOptions = Object.assign({
-          basedir: dirname(args.path),
-        }, config);
+         const fileOptions = Object.assign({
+           basedir: dirname(args.path),
+         }, config);
 
-        const code = _glslify.default.compile(contents, fileOptions);
+         // Compile code with Glsifiy (follows require() statements)
+         let code = _glslify.default.compile(contents, fileOptions);
 
-        console.log(requireIndex);
+         // Minify code (based on leosingleton/webpack-glsl-minify)
+         if (config.compress) {
+                 code = await compressShader(code);
+               }
 
-        if (config.compress) {
-          if (requireIndex === 0) {
-            console.log('Compressing...', args.path);
-            // console.log('Before', code);
-          }
-
-          code = await compressShader(code);
-
-          if (requireIndex === 0) {
-            // console.log('After', code);
-          }
-        }
-
-        // if (contents.includes('require(')) {
-        //     if (requireIndex === 0) {
-        //         console.log('contents:\n', contents);
-        //         console.log('code:\n', code);
-        //     }
-        requireIndex++;
-        // }
-
-        return {
-          contents: code,
-          loader: 'text',
-        };
-      });
+         return {
+           contents: code,
+           loader: 'text',
+         };
+       });
     }
   }
 }
