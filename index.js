@@ -11,9 +11,9 @@ import GlslMinify from './lib/minify.js';
 
 let GlslMinifyInstance;
 
-async function compressShader(code) {
+async function compressShader(code, options = {}) {
   // Code adapted from https://github.com/leosingleton/webpack-glsl-minify
-  GlslMinifyInstance = GlslMinifyInstance || new GlslMinify();
+  GlslMinifyInstance = GlslMinifyInstance || new GlslMinify(options);
   const result = await GlslMinifyInstance.executeFile({ contents: code });
   return result.sourceCode;
 }
@@ -35,8 +35,8 @@ function createFilter(extensions) {
   return new RegExp(expression);
 }
 
-function glslify(options) {
-  const config = Object.assign({}, kDefaultConfig, options);
+function glslify(glslifyOptions, minifyOptions) {
+  const config = Object.assign({}, kDefaultConfig, glslifyOptions);
   const filter = createFilter(config.extensions);
 
   return {
@@ -55,8 +55,8 @@ function glslify(options) {
 
          // Minify code (based on leosingleton/webpack-glsl-minify)
          if (config.compress) {
-                 code = await compressShader(code);
-               }
+           code = await compressShader(code, minifyOptions);
+         }
 
          return {
            contents: code,
