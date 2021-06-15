@@ -9,13 +9,13 @@ import { promises as fsPromises } from 'fs';
 import * as _glslify from 'glslify';
 import GlslMinify from './lib/minify.js';
 
-async function compressShader(code, options = {}) {
+async function minifyShader(code, options) {
   // Code adapted from https://github.com/leosingleton/webpack-glsl-minify
   const result = await new GlslMinify(options).executeFile({ contents: code });
   return result.sourceCode;
 }
 
-const kDefaultConfig = {
+const defaultConfig = {
   extensions: [
     'vs',
     'fs',
@@ -23,7 +23,8 @@ const kDefaultConfig = {
     'frag',
     'glsl',
   ],
-  compress: false,
+  glslify: {},
+  minify: false,
 };
 
 function createFilter(extensions) {
@@ -32,8 +33,8 @@ function createFilter(extensions) {
   return new RegExp(expression);
 }
 
-function glslify(glslifyOptions, minifyOptions) {
-  const config = Object.assign({}, kDefaultConfig, glslifyOptions);
+function glslify(userConfig) {
+  const config = Object.assign({}, defaultConfig, userConfig);
   const filter = createFilter(config.extensions);
 
   return {
@@ -43,22 +44,22 @@ function glslify(glslifyOptions, minifyOptions) {
       build.onLoad({ filter }, async (args) => {
         const contents = await fsPromises.readFile(args.path, 'utf8');
 
-         const fileOptions = Object.assign({
-           basedir: dirname(args.path),
-         }, config);
+        const glslifyConfig = Object.assign({
+          basedir: dirname(args.path), // Default value
+        }, config.glslify);
 
-         // Compile code with Glsifiy (follows require() statements)
-         let code = _glslify.default.compile(contents, fileOptions);
+        // Compile shader with Glsifiy (follows require() statements)
+        let code = _glslify.default.compile(contents, glslifyConfig);
 
-         // Minify code (based on leosingleton/webpack-glsl-minify)
-         if (config.compress) {
-           code = await compressShader(code, minifyOptions);
+        // Minify shader (based on leosingleton/webpack-glsl-minify)
+        if (config.minify) {
+          const minifyConfig = typeof config.minify === 'object'
+            ? config.minify
+            : {};
+          code = await minifyShader(code, minifyConfig);
          }
 
-         return {
-           contents: code,
-           loader: 'text',
-         };
+        return { contents: code, loader: 'text', };
        });
     }
   }
