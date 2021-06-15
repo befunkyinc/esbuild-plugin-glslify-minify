@@ -6,7 +6,7 @@ Compile GLSL shaders and minify. Based on the following projects:
 ## Usage
 
 ```bash
-npm install --save-dev git+https://github.com/befunkyinc/esbuild-plugin-glslify-minify.git
+npm install --save-dev @befunky/esbuild-plugin-glslify-minify
 ```
 
 ## Configuration
