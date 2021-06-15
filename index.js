@@ -9,12 +9,9 @@ import { promises as fsPromises } from 'fs';
 import * as _glslify from 'glslify';
 import GlslMinify from './lib/minify.js';
 
-let GlslMinifyInstance;
-
 async function compressShader(code, options = {}) {
   // Code adapted from https://github.com/leosingleton/webpack-glsl-minify
-  GlslMinifyInstance = GlslMinifyInstance || new GlslMinify(options);
-  const result = await GlslMinifyInstance.executeFile({ contents: code });
+  const result = await new GlslMinify(options).executeFile({ contents: code });
   return result.sourceCode;
 }
 
