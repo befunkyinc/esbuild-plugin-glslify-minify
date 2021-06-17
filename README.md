@@ -27,6 +27,7 @@ esbuildPluginGlslifyMinify({
   minify: {
     preserveUniforms: true,
     preserveDefines: true,
+    removeGlslifyDefinition: true, // Removes "#define GLSLIFY 1", false by default
   },
 
   // To avoid minification, omit the config or set it to a falsy value, e.g.
